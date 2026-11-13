@@ -4,8 +4,7 @@ import React, { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { dataStore } from '@/lib/storage';
-import { isGeminiConfigured } from '@/lib/gemini';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { getClientConfigStatus } from '@/lib/config-status';
 import {
   Settings,
   Key,
@@ -23,6 +22,7 @@ import { TutorPersona } from '@/types';
 
 export default function SettingsPage() {
   const prefs = dataStore.getPreferences();
+  const { isGeminiConfigured, isSupabaseConfigured } = getClientConfigStatus();
   const [apiKey, setApiKey] = useState('');
   const [spatialEffects, setSpatialEffects] = useState(prefs.spatial_effects_enabled);
   const [defaultPersona, setDefaultPersona] = useState<TutorPersona>(prefs.default_tutor_persona);

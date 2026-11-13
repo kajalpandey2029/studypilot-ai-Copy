@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -14,43 +14,51 @@ import {
   CheckCircle2,
   Layers,
   FileQuestion,
-  ArrowRight,
-  BookOpen,
-  Trash2,
+  RotateCw,
 } from 'lucide-react';
 
 export default function LibraryPage() {
-  const [documents, setDocuments] = useState<DocumentItem[]>(dataStore.getDocuments());
+  const [documents, setDocuments] = useState<DocumentItem[]>(() => dataStore.getDocuments());
   const [searchQuery, setSearchQuery] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
+  const [uploadStage, setUploadStage] = useState<string | null>(null);
 
-  const handleSimulatedUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSimulatedUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
+    setUploadStage('Extracting text & metadata (25%)...');
     setTimeout(() => {
-      const newDoc = dataStore.addDocument({
-        user_id: 'usr_default_pilot',
-        title: file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' '),
-        file_name: file.name,
-        file_size_bytes: file.size || 1540000,
-        file_type: file.name.endsWith('.pdf') ? 'pdf' : 'txt',
-        page_count: Math.floor(Math.random() * 20) + 5,
-        summary: 'Uploaded reference document parsed into semantic vector chunks for RAG question answering and citation retrieval.',
-        key_concepts: ['Core Methodology', 'Algorithmic Bounds', 'Practical Invariants'],
-        status: 'processed',
-        content_text: `Chapter 1: Foundational Framework. This material outlines systematic processing pipelines and invariant enforcement for scalable academic computing. Section 2: Complexity bounds and edge guarantees.`,
-      });
-      setDocuments([...dataStore.getDocuments()]);
-      setIsUploading(false);
-    }, 1200);
-  };
+      setUploadStage('Splitting into semantic vector chunks (60%)...');
+      setTimeout(() => {
+        setUploadStage('Generating embeddings & citations (90%)...');
+        setTimeout(() => {
+          dataStore.addDocument({
+            user_id: 'usr_default_pilot',
+            title: file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' '),
+            file_name: file.name,
+            file_size_bytes: file.size || 1540000,
+            file_type: file.name.endsWith('.pdf') ? 'pdf' : 'txt',
+            page_count: Math.floor(Math.random() * 20) + 5,
+            summary: 'Uploaded reference document parsed into semantic vector chunks for RAG question answering and citation retrieval.',
+            key_concepts: ['Core Methodology', 'Algorithmic Bounds', 'Practical Invariants'],
+            status: 'processed',
+            content_text: `Chapter 1: Foundational Framework. This material outlines systematic processing pipelines and invariant enforcement for scalable academic computing. Section 2: Complexity bounds and edge guarantees.`,
+          });
+          setDocuments([...dataStore.getDocuments()]);
+          setUploadStage(null);
+        }, 300);
+      }, 350);
+    }, 400);
+  }, []);
 
-  const filteredDocs = documents.filter((d) =>
-    d.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.file_name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredDocs = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return documents;
+    return documents.filter((d) =>
+      d.title.toLowerCase().includes(query) ||
+      d.file_name.toLowerCase().includes(query)
+    );
+  }, [documents, searchQuery]);
 
   return (
     <AppLayout
@@ -65,17 +73,23 @@ export default function LibraryPage() {
             accept=".pdf,.docx,.txt"
             onChange={handleSimulatedUpload}
             className="absolute inset-0 opacity-0 cursor-pointer z-10"
-            disabled={isUploading}
+            disabled={Boolean(uploadStage)}
           />
           <div className="flex flex-col items-center justify-center pointer-events-none">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600 to-cyan-500 flex items-center justify-center text-white mb-4 shadow-glow-violet">
-              <UploadCloud className="w-7 h-7" />
+              {uploadStage ? (
+                <RotateCw className="w-7 h-7 animate-spin text-cyan-300" />
+              ) : (
+                <UploadCloud className="w-7 h-7" />
+              )}
             </div>
             <h3 className="text-base font-bold text-white mb-1">
-              {isUploading ? 'Parsing & Indexing Document Chunks...' : 'Upload Lecture Slides, Textbooks, or Papers'}
+              {uploadStage || 'Upload Lecture Slides, Textbooks, or Papers'}
             </h3>
             <p className="text-xs text-slate-400 max-w-md mb-4">
-              Supported formats: PDF, DOCX, TXT. Documents are chunked and embedded for accurate citations.
+              {uploadStage
+                ? 'Processing document asynchronously in background pipeline...'
+                : 'Supported formats: PDF, DOCX, TXT. Documents are chunked and embedded for accurate citations.'}
             </p>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] text-slate-400 font-mono">
               <span>Automatic Citation & RAG Enabled</span>

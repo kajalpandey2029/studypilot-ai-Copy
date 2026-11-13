@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateStudyResponse } from '@/lib/gemini';
+import { documentChunkCache } from '@/lib/cache';
 import { Citation } from '@/types';
 
 export async function POST(req: NextRequest) {
@@ -11,8 +12,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 });
     }
 
+    const docCacheKey = `docqa_${documentTitle || 'doc'}_${query.trim().toLowerCase()}`;
+    const cachedAnswer = documentChunkCache.get(docCacheKey);
+
+    if (cachedAnswer) {
+      return NextResponse.json({
+        success: true,
+        answer: cachedAnswer,
+        citations: [
+          {
+            document_id: 'doc_ref',
+            document_name: documentTitle || 'Document Excerpt',
+            page_number: Math.min(1, pageCount),
+            section: 'Core Principles (Cached)',
+            snippet: 'Retrieved instantly from document query cache.',
+          },
+        ],
+      });
+    }
+
     const contextSnippet = typeof documentContent === 'string' && documentContent.length > 0
-      ? documentContent.slice(0, 3000)
+      ? documentContent.slice(0, 2500)
       : 'Document content provided is being processed.';
 
     const systemContextPrompt = `You are a Document Intelligence Assistant answering questions grounded strictly in the provided document: "${documentTitle || 'Reference Document'}".
@@ -32,6 +52,8 @@ Instructions:
       mode: 'exam_oriented',
       subject: documentTitle || 'Uploaded Document',
     });
+
+    documentChunkCache.set(docCacheKey, answer);
 
     const citations: Citation[] = [
       {

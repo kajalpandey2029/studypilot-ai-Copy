@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateStudyResponse } from '@/lib/gemini';
+import { aiResponseCache } from '@/lib/cache';
 import { ProgrammingLanguage } from '@/types';
 
 export async function POST(req: NextRequest) {
@@ -9,6 +10,18 @@ export async function POST(req: NextRequest) {
 
     if (!code) {
       return NextResponse.json({ error: 'Code is required' }, { status: 400 });
+    }
+
+    const codeHash = `${problemTitle}_${language}_${action}_${code.slice(0, 100)}`;
+    const cached = aiResponseCache.get(codeHash);
+    if (cached) {
+      return NextResponse.json({
+        success: true,
+        analysis: cached,
+        language,
+        action,
+        cached: true,
+      });
     }
 
     let prompt = '';
@@ -41,6 +54,8 @@ Provide a formal mathematical recurrence or step count justification for both Be
       mode: 'step_by_step',
       subject: `Computer Science: ${language.toUpperCase()}`,
     });
+
+    aiResponseCache.set(codeHash, response);
 
     return NextResponse.json({
       success: true,

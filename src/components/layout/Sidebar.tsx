@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, memo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -22,23 +22,23 @@ import {
 } from 'lucide-react';
 import { dataStore } from '@/lib/storage';
 
-export function Sidebar() {
-  const pathname = usePathname();
-  const profile = dataStore.getProfile();
+const NAVIGATION_ITEMS = [
+  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'AI Workspace', href: '/study', icon: BrainCircuit, badge: 'Smart' },
+  { label: 'Personal Tutor', href: '/tutor', icon: GraduationCap },
+  { label: 'Doc Intelligence', href: '/library', icon: FileText },
+  { label: 'Adaptive Exam', href: '/quiz', icon: FileQuestion },
+  { label: 'Flashcards', href: '/flashcards', icon: Layers, badge: 'SM-2' },
+  { label: 'Study Planner', href: '/planner', icon: CalendarCheck },
+  { label: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { label: 'Coding Lab', href: '/coding-lab', icon: Code2 },
+  { label: 'Profile', href: '/profile', icon: User },
+  { label: 'Settings', href: '/settings', icon: Settings },
+];
 
-  const navigationItems = [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'AI Workspace', href: '/study', icon: BrainCircuit, badge: 'Smart' },
-    { label: 'Personal Tutor', href: '/tutor', icon: GraduationCap },
-    { label: 'Doc Intelligence', href: '/library', icon: FileText },
-    { label: 'Adaptive Exam', href: '/quiz', icon: FileQuestion },
-    { label: 'Flashcards', href: '/flashcards', icon: Layers, badge: 'SM-2' },
-    { label: 'Study Planner', href: '/planner', icon: CalendarCheck },
-    { label: 'Analytics', href: '/analytics', icon: BarChart3 },
-    { label: 'Coding Lab', href: '/coding-lab', icon: Code2 },
-    { label: 'Profile', href: '/profile', icon: User },
-    { label: 'Settings', href: '/settings', icon: Settings },
-  ];
+export const Sidebar = memo(function Sidebar() {
+  const pathname = usePathname();
+  const profile = useMemo(() => dataStore.getProfile(), []);
 
   return (
     <aside className="w-64 min-h-screen fixed top-0 left-0 z-40 p-4 hidden lg:flex flex-col">
@@ -86,7 +86,7 @@ export function Sidebar() {
 
           {/* Navigation Links */}
           <nav className="space-y-1 overflow-y-auto max-h-[calc(100vh-340px)] pr-1">
-            {navigationItems.map((item) => {
+            {NAVIGATION_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
 
@@ -138,4 +138,4 @@ export function Sidebar() {
       </div>
     </aside>
   );
-}
+});

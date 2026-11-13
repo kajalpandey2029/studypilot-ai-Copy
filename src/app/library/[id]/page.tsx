@@ -17,8 +17,7 @@ import {
   RotateCw,
   BookOpen,
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 
 export default function DocumentViewerPage() {
   const params = useParams();
@@ -161,9 +160,7 @@ export default function DocumentViewerPage() {
                 {/* Answer with Citation */}
                 <div className="flex justify-start">
                   <div className="p-4 rounded-2xl glass-panel border-white/10 text-xs text-slate-200 max-w-[90%] rounded-tl-sm space-y-3">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {item.a}
-                    </ReactMarkdown>
+                    <MarkdownRenderer content={item.a} />
 
                     {item.citation && (
                       <div className="mt-3 pt-3 border-t border-white/10 bg-white/[0.03] p-2.5 rounded-xl flex items-start gap-2">

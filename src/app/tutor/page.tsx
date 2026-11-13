@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { dataStore } from '@/lib/storage';
 import { TutorPersona, ChatMessage } from '@/types';
 import {
@@ -10,17 +11,49 @@ import {
   Sparkles,
   Send,
   Lightbulb,
-  CheckCircle2,
-  HelpCircle,
-  ShieldAlert,
-  Flame,
   RotateCw,
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+
+const PERSONAS: { id: TutorPersona; name: string; tag: string; description: string; color: string }[] = [
+  {
+    id: 'friendly_teacher',
+    name: 'Friendly Teacher',
+    tag: 'Supportive & Relatable',
+    description: 'Patient, warm, and builds confidence with everyday analogies and praise.',
+    color: 'from-emerald-500 to-teal-600',
+  },
+  {
+    id: 'strict_coach',
+    name: 'Strict Exam Coach',
+    tag: 'Disciplined & Rigorous',
+    description: 'Points out loose assumptions immediately and demands strict test accuracy.',
+    color: 'from-rose-500 to-red-600',
+  },
+  {
+    id: 'research_mentor',
+    name: 'Research Mentor',
+    tag: 'Academic & Inquisitive',
+    description: 'Probes fundamental assumptions, theoretical boundaries, and research proofs.',
+    color: 'from-purple-500 to-indigo-600',
+  },
+  {
+    id: 'programming_mentor',
+    name: 'Programming Mentor',
+    tag: 'Systems & Code Architect',
+    description: 'Emphasizes clean code, Big-O tradeoffs, memory footprints, and debugging.',
+    color: 'from-cyan-500 to-blue-600',
+  },
+  {
+    id: 'conceptual_explainer',
+    name: 'Conceptual Explainer',
+    tag: 'First Principles',
+    description: 'Strips away jargon to reveal simple visual intuition before code or formulas.',
+    color: 'from-amber-500 to-orange-600',
+  },
+];
 
 export default function PersonalTutorPage() {
-  const profile = dataStore.getProfile();
+  const profile = useMemo(() => dataStore.getProfile(), []);
   const [persona, setPersona] = useState<TutorPersona>('friendly_teacher');
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -37,45 +70,7 @@ What topic or problem would you like to review together? We will use the **Socra
   const [inputPrompt, setInputPrompt] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const personas: { id: TutorPersona; name: string; tag: string; description: string; color: string }[] = [
-    {
-      id: 'friendly_teacher',
-      name: 'Friendly Teacher',
-      tag: 'Supportive & Relatable',
-      description: 'Patient, warm, and builds confidence with everyday analogies and praise.',
-      color: 'from-emerald-500 to-teal-600',
-    },
-    {
-      id: 'strict_coach',
-      name: 'Strict Exam Coach',
-      tag: 'Disciplined & Rigorous',
-      description: 'Points out loose assumptions immediately and demands strict test accuracy.',
-      color: 'from-rose-500 to-red-600',
-    },
-    {
-      id: 'research_mentor',
-      name: 'Research Mentor',
-      tag: 'Academic & Inquisitive',
-      description: 'Probes fundamental assumptions, theoretical boundaries, and research proofs.',
-      color: 'from-purple-500 to-indigo-600',
-    },
-    {
-      id: 'programming_mentor',
-      name: 'Programming Mentor',
-      tag: 'Systems & Code Architect',
-      description: 'Emphasizes clean code, Big-O tradeoffs, memory footprints, and debugging.',
-      color: 'from-cyan-500 to-blue-600',
-    },
-    {
-      id: 'conceptual_explainer',
-      name: 'Conceptual Explainer',
-      tag: 'First Principles',
-      description: 'Strips away jargon to reveal simple visual intuition before code or formulas.',
-      color: 'from-amber-500 to-orange-600',
-    },
-  ];
-
-  const handleSend = async (e: React.FormEvent) => {
+  const handleSend = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputPrompt.trim() || loading) return;
 
@@ -128,7 +123,20 @@ What topic or problem would you like to review together? We will use the **Socra
     } finally {
       setLoading(false);
     }
-  };
+  }, [inputPrompt, loading, messages, persona, profile]);
+
+  const handleRestart = useCallback(() => {
+    setMessages([
+      {
+        id: `reset_${Date.now()}`,
+        conversation_id: 'tutor_session',
+        user_id: profile.id,
+        role: 'assistant',
+        content: `Session restarted. What concept would you like to explore next?`,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+  }, [profile.id]);
 
   return (
     <AppLayout
@@ -143,7 +151,7 @@ What topic or problem would you like to review together? We will use the **Socra
               Select Tutor Persona
             </h3>
             <div className="space-y-2">
-              {personas.map((p) => (
+              {PERSONAS.map((p) => (
                 <div
                   key={p.id}
                   onClick={() => setPersona(p.id)}
@@ -187,7 +195,7 @@ What topic or problem would you like to review together? We will use the **Socra
               </div>
               <div>
                 <h4 className="text-xs font-bold text-white">
-                  {personas.find((p) => p.id === persona)?.name}
+                  {PERSONAS.find((p) => p.id === persona)?.name}
                 </h4>
                 <p className="text-[10px] text-slate-400">
                   Adaptive Socratic Mode • Active Mentorship Session
@@ -196,18 +204,7 @@ What topic or problem would you like to review together? We will use the **Socra
             </div>
 
             <button
-              onClick={() =>
-                setMessages([
-                  {
-                    id: `reset_${Date.now()}`,
-                    conversation_id: 'tutor_session',
-                    user_id: profile.id,
-                    role: 'assistant',
-                    content: `Session restarted. What concept would you like to explore next?`,
-                    created_at: new Date().toISOString(),
-                  },
-                ])
-              }
+              onClick={handleRestart}
               className="text-[11px] px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10"
             >
               Restart Dialogue
@@ -234,9 +231,7 @@ What topic or problem would you like to review together? We will use the **Socra
                       : 'glass-panel border-white/10 text-slate-200 rounded-tl-sm shadow-lg'
                   }`}
                 >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {msg.content}
-                  </ReactMarkdown>
+                  <MarkdownRenderer content={msg.content} />
                 </div>
               </div>
             ))}

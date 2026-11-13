@@ -16,8 +16,7 @@ import {
   Terminal,
   Cpu,
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 
 export default function CodingLabPage() {
   const problems = dataStore.getCodingProblems();
@@ -187,9 +186,7 @@ export default function CodingLabPage() {
                     <span>Auditing your code and Big-O invariants...</span>
                   </div>
                 ) : analysisText ? (
-                  <div className="prose prose-invert text-xs leading-relaxed">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysisText}</ReactMarkdown>
-                  </div>
+                  <MarkdownRenderer content={analysisText} />
                 ) : (
                   <div className="text-center py-12 text-slate-500">
                     <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-50" />

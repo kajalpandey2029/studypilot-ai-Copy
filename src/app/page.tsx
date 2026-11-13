@@ -23,82 +23,82 @@ import {
   Zap,
 } from 'lucide-react';
 
+const FEATURES = [
+  {
+    icon: BrainCircuit,
+    title: 'Adaptive Study Workspace',
+    description: 'Switch seamlessly between Beginner, Intermediate, Advanced, and Exam-Oriented explanations. Never get stuck on dense academic jargon.',
+    color: 'from-violet-500 to-indigo-600',
+  },
+  {
+    icon: FileText,
+    title: 'Document Intelligence & RAG',
+    description: 'Upload lecture slides, textbooks, and research papers (PDF/DOCX/TXT). Query complex chapters with grounded citations and page numbers.',
+    color: 'from-cyan-500 to-blue-600',
+  },
+  {
+    icon: FileQuestion,
+    title: 'Smart Examination Engine',
+    description: 'Generate timed adaptive mock tests with single/multi MCQ, true/false, fill-in-blanks, and code debugging questions with detailed rationales.',
+    color: 'from-amber-500 to-rose-600',
+  },
+  {
+    icon: Layers,
+    title: 'SuperMemo-2 Spaced Repetition',
+    description: 'Scientific memory optimization that automatically schedules reviews right before you forget, backed by cognitive decay curves.',
+    color: 'from-emerald-500 to-teal-600',
+  },
+  {
+    icon: CalendarCheck,
+    title: 'Intelligent Study Planner',
+    description: 'Dynamic schedule generation that factors in your upcoming exam deadlines, daily available hours, and identified weak concepts.',
+    color: 'from-pink-500 to-purple-600',
+  },
+  {
+    icon: BarChart3,
+    title: 'Evidence-Based Analytics',
+    description: 'Track topic mastery, accuracy trends, study streaks, and cognitive recall with interactive visualizations.',
+    color: 'from-blue-500 to-indigo-600',
+  },
+  {
+    icon: Code2,
+    title: 'Programming Practice Lab',
+    description: 'Solve algorithm problems in C, C++, Python, Java, and JavaScript with step-by-step AI debugging and Big-O complexity analysis.',
+    color: 'from-violet-500 to-cyan-500',
+  },
+  {
+    icon: GraduationCap,
+    title: '5 Persona AI Tutors',
+    description: 'Choose your mentor style: Friendly Teacher, Strict Exam Coach, Research Mentor, Programming Mentor, or Conceptual Explainer.',
+    color: 'from-indigo-500 to-pink-500',
+  },
+];
+
+const FAQS = [
+  {
+    q: 'How is StudyPilot AI different from general chatbots?',
+    a: 'General chatbots simply answer questions in a generic tone. StudyPilot AI is a comprehensive learning OS: it diagnoses what you understand, tracks your weak topics, schedules reviews using spaced repetition (SM-2), and generates grounded mock examinations with page-level citations from your course materials.',
+  },
+  {
+    q: 'Does StudyPilot AI hallucinate citations from my uploaded documents?',
+    a: 'No. Our Document Intelligence engine implements rigorous Retrieval-Augmented Generation (RAG). Every answer cites the exact document title, section, and page number, distinguishing document facts from general concepts.',
+  },
+  {
+    q: 'Can I use my own Google Gemini API key?',
+    a: 'Yes! StudyPilot AI provides a built-in settings interface where you can input your own Google Gemini API key for high-speed generative synthesis, or rely on our configured platform defaults.',
+  },
+  {
+    q: 'How does the adaptive exam scoring work?',
+    a: 'The assessment engine evaluates your objective and coding answers, identifies conceptual patterns where errors occurred, calculates accuracy percentages, and automatically updates your weak topics and study plan.',
+  },
+  {
+    q: 'Is there a free tier for university and school students?',
+    a: 'Yes, our Free Tier provides access to the AI study workspace, flashcards, document uploads, and basic mock quizzes with zero credit card required.',
+  },
+];
+
 export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
-
-  const features = [
-    {
-      icon: BrainCircuit,
-      title: 'Adaptive Study Workspace',
-      description: 'Switch seamlessly between Beginner, Intermediate, Advanced, and Exam-Oriented explanations. Never get stuck on dense academic jargon.',
-      color: 'from-violet-500 to-indigo-600',
-    },
-    {
-      icon: FileText,
-      title: 'Document Intelligence & RAG',
-      description: 'Upload lecture slides, textbooks, and research papers (PDF/DOCX/TXT). Query complex chapters with grounded citations and page numbers.',
-      color: 'from-cyan-500 to-blue-600',
-    },
-    {
-      icon: FileQuestion,
-      title: 'Smart Examination Engine',
-      description: 'Generate timed adaptive mock tests with single/multi MCQ, true/false, fill-in-blanks, and code debugging questions with detailed rationales.',
-      color: 'from-amber-500 to-rose-600',
-    },
-    {
-      icon: Layers,
-      title: 'SuperMemo-2 Spaced Repetition',
-      description: 'Scientific memory optimization that automatically schedules reviews right before you forget, backed by cognitive decay curves.',
-      color: 'from-emerald-500 to-teal-600',
-    },
-    {
-      icon: CalendarCheck,
-      title: 'Intelligent Study Planner',
-      description: 'Dynamic schedule generation that factors in your upcoming exam deadlines, daily available hours, and identified weak concepts.',
-      color: 'from-pink-500 to-purple-600',
-    },
-    {
-      icon: BarChart3,
-      title: 'Evidence-Based Analytics',
-      description: 'Track topic mastery, accuracy trends, study streaks, and cognitive recall with interactive visualizations.',
-      color: 'from-blue-500 to-indigo-600',
-    },
-    {
-      icon: Code2,
-      title: 'Programming Practice Lab',
-      description: 'Solve algorithm problems in C, C++, Python, Java, and JavaScript with step-by-step AI debugging and Big-O complexity analysis.',
-      color: 'from-violet-500 to-cyan-500',
-    },
-    {
-      icon: GraduationCap,
-      title: '5 Persona AI Tutors',
-      description: 'Choose your mentor style: Friendly Teacher, Strict Exam Coach, Research Mentor, Programming Mentor, or Conceptual Explainer.',
-      color: 'from-indigo-500 to-pink-500',
-    },
-  ];
-
-  const faqs = [
-    {
-      q: 'How is StudyPilot AI different from general chatbots?',
-      a: 'General chatbots simply answer questions in a generic tone. StudyPilot AI is a comprehensive learning OS: it diagnoses what you understand, tracks your weak topics, schedules reviews using spaced repetition (SM-2), and generates grounded mock examinations with page-level citations from your course materials.',
-    },
-    {
-      q: 'Does StudyPilot AI hallucinate citations from my uploaded documents?',
-      a: 'No. Our Document Intelligence engine implements rigorous Retrieval-Augmented Generation (RAG). Every answer cites the exact document title, section, and page number, distinguishing document facts from general concepts.',
-    },
-    {
-      q: 'Can I use my own Google Gemini API key?',
-      a: 'Yes! StudyPilot AI provides a built-in settings interface where you can input your own Google Gemini API key for high-speed generative synthesis, or rely on our configured platform defaults.',
-    },
-    {
-      q: 'How does the adaptive exam scoring work?',
-      a: 'The assessment engine evaluates your objective and coding answers, identifies conceptual patterns where errors occurred, calculates accuracy percentages, and automatically updates your weak topics and study plan.',
-    },
-    {
-      q: 'Is there a free tier for university and school students?',
-      a: 'Yes, our Free Tier provides access to the AI study workspace, flashcards, document uploads, and basic mock quizzes with zero credit card required.',
-    },
-  ];
 
   return (
     <div className="min-h-screen bg-[#03060f] text-slate-100 flex flex-col selection:bg-violet-600 selection:text-white">
@@ -123,7 +123,7 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feat, idx) => {
+            {FEATURES.map((feat, idx) => {
               const Icon = feat.icon;
               return (
                 <div
@@ -392,7 +392,7 @@ export default function LandingPage() {
           </div>
 
           <div className="space-y-4">
-            {faqs.map((faq, idx) => (
+            {FAQS.map((faq, idx) => (
               <div
                 key={idx}
                 className="glass-panel rounded-2xl border border-white/10 overflow-hidden transition-all"

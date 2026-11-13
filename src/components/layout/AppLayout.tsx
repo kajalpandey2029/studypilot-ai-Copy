@@ -15,14 +15,16 @@ interface AppLayoutProps {
 
 export function AppLayout({ children, title, subtitle, action }: AppLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const profile = dataStore.getProfile();
+  const profile = React.useMemo(() => dataStore.getProfile(), []);
 
   return (
     <div className="min-h-screen bg-[#03060f] text-slate-100 flex relative overflow-hidden">
-      {/* Ambient Spatial Lighting Orbs */}
-      <div className="fixed top-[-10%] left-[-10%] w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[140px] pointer-events-none -z-10" />
-      <div className="fixed top-[30%] right-[-10%] w-[600px] h-[600px] bg-cyan-600/10 rounded-full blur-[160px] pointer-events-none -z-10" />
-      <div className="fixed bottom-[-10%] left-[20%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[140px] pointer-events-none -z-10" />
+      {/* Ambient Spatial Lighting Orbs - GPU Layer Promoted */}
+      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden transform-gpu will-change-transform">
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-violet-600/10 rounded-full blur-[100px] transform-gpu" />
+        <div className="absolute top-[30%] right-[-10%] w-[600px] h-[600px] bg-cyan-600/10 rounded-full blur-[120px] transform-gpu" />
+        <div className="absolute bottom-[-10%] left-[20%] w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[100px] transform-gpu" />
+      </div>
 
       {/* Desktop Sidebar */}
       <Sidebar />

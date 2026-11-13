@@ -368,7 +368,7 @@ A valid BST is defined as follows:
   },
 ];
 
-// In-Memory store fallback
+// In-Memory store fallback with indexed O(1) caching
 class DataStore {
   private profile: UserProfile = INITIAL_PROFILE;
   private preferences: UserPreferences = INITIAL_PREFERENCES;
@@ -384,6 +384,41 @@ class DataStore {
   private sessions: StudySession[] = [];
   private quizzes: Quiz[] = [];
   private attempts: QuizAttempt[] = [];
+
+  // Indexed Lookup Caches
+  private subjectsMap = new Map<string, Subject>();
+  private documentsMap = new Map<string, DocumentItem>();
+  private topicsBySubject = new Map<string, Topic[]>();
+  private flashcardsByDeck = new Map<string, Flashcard[]>();
+  private weakTopicsCache: Topic[] | null = null;
+
+  constructor() {
+    this.rebuildIndexes();
+  }
+
+  private rebuildIndexes(): void {
+    this.subjectsMap.clear();
+    this.subjects.forEach((s) => this.subjectsMap.set(s.id, s));
+
+    this.documentsMap.clear();
+    this.documents.forEach((d) => this.documentsMap.set(d.id, d));
+
+    this.topicsBySubject.clear();
+    this.topics.forEach((t) => {
+      const list = this.topicsBySubject.get(t.subject_id) || [];
+      list.push(t);
+      this.topicsBySubject.set(t.subject_id, list);
+    });
+
+    this.flashcardsByDeck.clear();
+    this.flashcards.forEach((f) => {
+      const list = this.flashcardsByDeck.get(f.deck_id) || [];
+      list.push(f);
+      this.flashcardsByDeck.set(f.deck_id, list);
+    });
+
+    this.weakTopicsCache = null;
+  }
   private conversations: Conversation[] = [
     {
       id: 'conv_1',
@@ -440,9 +475,9 @@ If you attempt a single right rotation directly on the parent, the right-heavy c
     return this.preferences;
   }
 
-  // Subjects & Topics
+  // Subjects & Topics (Indexed O(1))
   getSubjects(): Subject[] { return this.subjects; }
-  getSubject(id: string): Subject | undefined { return this.subjects.find((s) => s.id === id); }
+  getSubject(id: string): Subject | undefined { return this.subjectsMap.get(id); }
   createSubject(subject: Omit<Subject, 'id' | 'created_at'>): Subject {
     const newSubject: Subject = {
       ...subject,
@@ -450,18 +485,22 @@ If you attempt a single right rotation directly on the parent, the right-heavy c
       created_at: new Date().toISOString(),
     };
     this.subjects.push(newSubject);
+    this.subjectsMap.set(newSubject.id, newSubject);
     return newSubject;
   }
   getTopics(subjectId?: string): Topic[] {
-    return subjectId ? this.topics.filter((t) => t.subject_id === subjectId) : this.topics;
+    return subjectId ? (this.topicsBySubject.get(subjectId) || []) : this.topics;
   }
   getWeakTopics(): Topic[] {
-    return this.topics.filter((t) => t.is_weak_topic || t.mastery_score < 60);
+    if (!this.weakTopicsCache) {
+      this.weakTopicsCache = this.topics.filter((t) => t.is_weak_topic || t.mastery_score < 60);
+    }
+    return this.weakTopicsCache;
   }
 
-  // Documents
+  // Documents (Indexed O(1))
   getDocuments(): DocumentItem[] { return this.documents; }
-  getDocument(id: string): DocumentItem | undefined { return this.documents.find((d) => d.id === id); }
+  getDocument(id: string): DocumentItem | undefined { return this.documentsMap.get(id); }
   addDocument(doc: Omit<DocumentItem, 'id' | 'created_at'>): DocumentItem {
     const newDoc: DocumentItem = {
       ...doc,
@@ -469,19 +508,26 @@ If you attempt a single right rotation directly on the parent, the right-heavy c
       created_at: new Date().toISOString(),
     };
     this.documents.unshift(newDoc);
+    this.documentsMap.set(newDoc.id, newDoc);
     return newDoc;
   }
 
-  // Flashcards & Decks
+  // Flashcards & Decks (Indexed O(1))
   getDecks(): FlashcardDeck[] { return this.decks; }
   getDeck(id: string): FlashcardDeck | undefined { return this.decks.find((d) => d.id === id); }
   getFlashcards(deckId?: string): Flashcard[] {
-    return deckId ? this.flashcards.filter((f) => f.deck_id === deckId) : this.flashcards;
+    return deckId ? (this.flashcardsByDeck.get(deckId) || []) : this.flashcards;
   }
   updateFlashcard(id: string, updates: Partial<Flashcard>): Flashcard | undefined {
     const index = this.flashcards.findIndex((f) => f.id === id);
     if (index === -1) return undefined;
     this.flashcards[index] = { ...this.flashcards[index], ...updates };
+    // Refresh deck index
+    const deckId = this.flashcards[index].deck_id;
+    this.flashcardsByDeck.set(
+      deckId,
+      this.flashcards.filter((f) => f.deck_id === deckId)
+    );
     return this.flashcards[index];
   }
   createFlashcard(card: Omit<Flashcard, 'id' | 'created_at'>): Flashcard {
@@ -491,6 +537,10 @@ If you attempt a single right rotation directly on the parent, the right-heavy c
       created_at: new Date().toISOString(),
     };
     this.flashcards.push(newCard);
+    const list = this.flashcardsByDeck.get(card.deck_id) || [];
+    list.push(newCard);
+    this.flashcardsByDeck.set(card.deck_id, list);
+
     // increment deck count
     const deck = this.decks.find((d) => d.id === card.deck_id);
     if (deck) deck.cards_count += 1;

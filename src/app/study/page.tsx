@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer';
 import { dataStore } from '@/lib/storage';
 import { StudyMode, ChatMessage, Conversation } from '@/types';
 import {
@@ -15,17 +16,19 @@ import {
   RotateCw,
   Plus,
   BookOpen,
-  MessageSquare,
-  GraduationCap,
-  Layers,
-  ChevronRight,
-  Code2,
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+
+const MODES: { id: StudyMode; label: string; desc: string }[] = [
+  { id: 'beginner', label: 'Beginner', desc: 'Analogies & intuitive concepts' },
+  { id: 'intermediate', label: 'Intermediate', desc: 'Balanced theory & examples' },
+  { id: 'advanced', label: 'Advanced', desc: 'Architectural & edge-case proofs' },
+  { id: 'exam_oriented', label: 'Exam High-Yield', desc: 'Midterm formulas & common traps' },
+  { id: 'step_by_step', label: 'Step-by-Step', desc: 'Sequential numbered walkthrough' },
+  { id: 'research_oriented', label: 'Research Frontier', desc: 'State-of-the-art literature' },
+];
 
 export default function StudyWorkspacePage() {
-  const subjects = dataStore.getSubjects();
+  const subjects = useMemo(() => dataStore.getSubjects(), []);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string>('conv_1');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -56,13 +59,12 @@ export default function StudyWorkspacePage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  const handleSendMessage = async (e?: React.FormEvent, overrideText?: string) => {
+  const handleSendMessage = useCallback(async (e?: React.FormEvent, overrideText?: string) => {
     if (e) e.preventDefault();
     const textToSend = overrideText || inputPrompt;
     if (!textToSend.trim() || loading) return;
 
-    // Add user message
-    const userMsg = dataStore.addMessage(activeConvId, 'user', textToSend);
+    dataStore.addMessage(activeConvId, 'user', textToSend);
     setMessages([...dataStore.getMessages(activeConvId)]);
     setInputPrompt('');
     setLoading(true);
@@ -76,13 +78,30 @@ export default function StudyWorkspacePage() {
           mode: selectedMode,
           subject: selectedSubject,
           history: messages.slice(-4).map((m) => ({ role: m.role, content: m.content })),
+          stream: true,
         }),
       });
 
-      const data = await res.json();
-      if (data.content) {
-        dataStore.addMessage(activeConvId, 'assistant', data.content);
-        setMessages([...dataStore.getMessages(activeConvId)]);
+      if (res.body) {
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let accumulated = '';
+        const assistantMsg = dataStore.addMessage(activeConvId, 'assistant', '');
+        setLoading(false);
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          accumulated += decoder.decode(value, { stream: true });
+          assistantMsg.content = accumulated;
+          setMessages([...dataStore.getMessages(activeConvId)]);
+        }
+      } else {
+        const data = await res.json();
+        if (data.content) {
+          dataStore.addMessage(activeConvId, 'assistant', data.content);
+          setMessages([...dataStore.getMessages(activeConvId)]);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -95,28 +114,19 @@ export default function StudyWorkspacePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeConvId, inputPrompt, loading, messages, selectedMode, selectedSubject]);
 
-  const handleNewSession = () => {
+  const handleNewSession = useCallback(() => {
     const newConv = dataStore.createConversation(`Study Session • ${selectedSubject}`, selectedMode);
     setConversations([...dataStore.getConversations()]);
     setActiveConvId(newConv.id);
-  };
+  }, [selectedMode, selectedSubject]);
 
-  const handleCopy = (text: string, id: string) => {
+  const handleCopy = useCallback((text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const modes: { id: StudyMode; label: string; desc: string }[] = [
-    { id: 'beginner', label: 'Beginner', desc: 'Analogies & intuitive concepts' },
-    { id: 'intermediate', label: 'Intermediate', desc: 'Balanced theory & examples' },
-    { id: 'advanced', label: 'Advanced', desc: 'Architectural & edge-case proofs' },
-    { id: 'exam_oriented', label: 'Exam High-Yield', desc: 'Midterm formulas & common traps' },
-    { id: 'step_by_step', label: 'Step-by-Step', desc: 'Sequential numbered walkthrough' },
-    { id: 'research_oriented', label: 'Research Frontier', desc: 'State-of-the-art literature' },
-  ];
+  }, []);
 
   return (
     <AppLayout
@@ -141,7 +151,7 @@ export default function StudyWorkspacePage() {
               Explanation Depth
             </h3>
             <div className="space-y-1.5">
-              {modes.map((m) => (
+              {MODES.map((m) => (
                 <button
                   key={m.id}
                   onClick={() => setSelectedMode(m.id)}
@@ -186,7 +196,7 @@ export default function StudyWorkspacePage() {
 
         {/* Right 3 Cols: Active Chat Workspace */}
         <div className="lg:col-span-3 flex flex-col glass-card-glow rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
-          {/* Header Controls (Subject Pills & Mode for Mobile) */}
+          {/* Header Controls */}
           <div className="p-4 border-b border-white/10 bg-white/[0.02] flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
               <span className="text-xs font-medium text-slate-400 flex items-center gap-1 shrink-0">
@@ -264,13 +274,11 @@ export default function StudyWorkspacePage() {
                     {msg.role === 'user' ? (
                       <p className="whitespace-pre-wrap">{msg.content}</p>
                     ) : (
-                      <div className="prose prose-invert max-w-none text-xs sm:text-sm space-y-3">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {msg.content}
-                        </ReactMarkdown>
+                      <div className="space-y-3">
+                        <MarkdownRenderer content={msg.content} />
 
                         {/* Action buttons on assistant message */}
-                        <div className="flex items-center gap-3 pt-3 border-t border-white/10 text-[11px] text-slate-400 not-prose">
+                        <div className="flex items-center gap-3 pt-3 border-t border-white/10 text-[11px] text-slate-400">
                           <button
                             onClick={() => handleCopy(msg.content, msg.id)}
                             className="flex items-center gap-1 hover:text-cyan-300 transition-colors"
@@ -307,7 +315,7 @@ export default function StudyWorkspacePage() {
                 <div className="w-8 h-8 rounded-xl bg-violet-600/30 border border-violet-500/40 flex items-center justify-center text-white animate-spin">
                   <RotateCw className="w-4 h-4 text-cyan-400" />
                 </div>
-                <span className="font-mono animate-pulse">StudyPilot AI is synthesizing structured notes...</span>
+                <span className="font-mono animate-pulse">Connecting to streaming AI engine...</span>
               </div>
             )}
             <div ref={messagesEndRef} />

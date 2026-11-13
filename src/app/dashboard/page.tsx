@@ -24,33 +24,32 @@ import {
   Activity,
 } from 'lucide-react';
 
+const WEEKLY_ACTIVITY = [
+  { day: 'Mon', hours: 2.2 },
+  { day: 'Tue', hours: 1.8 },
+  { day: 'Wed', hours: 3.1 },
+  { day: 'Thu', hours: 2.5 },
+  { day: 'Fri', hours: 1.5 },
+  { day: 'Sat', hours: 3.8 },
+  { day: 'Sun', hours: 2.6 },
+];
+
 export default function DashboardPage() {
-  const profile = dataStore.getProfile();
-  const subjects = dataStore.getSubjects();
-  const weakTopics = dataStore.getWeakTopics();
-  const tasks = dataStore.getTasks();
-  const documents = dataStore.getDocuments();
-  const decks = dataStore.getDecks();
+  const profile = React.useMemo(() => dataStore.getProfile(), []);
+  const subjects = React.useMemo(() => dataStore.getSubjects(), []);
+  const weakTopics = React.useMemo(() => dataStore.getWeakTopics(), []);
+  const decks = React.useMemo(() => dataStore.getDecks(), []);
+  const [taskList, setTaskList] = useState(() => dataStore.getTasks());
 
-  const [taskList, setTaskList] = useState(tasks);
-
-  const toggleTask = (id: string) => {
+  const toggleTask = React.useCallback((id: string) => {
     dataStore.toggleTask(id);
     setTaskList([...dataStore.getTasks()]);
-  };
+  }, []);
 
-  const totalDueCards = decks.reduce((acc, d) => acc + (d.cards_due_count || 0), 0);
-
-  // Weekly study hours data for display
-  const weeklyActivity = [
-    { day: 'Mon', hours: 2.2 },
-    { day: 'Tue', hours: 1.8 },
-    { day: 'Wed', hours: 3.1 },
-    { day: 'Thu', hours: 2.5 },
-    { day: 'Fri', hours: 1.5 },
-    { day: 'Sat', hours: 3.8 },
-    { day: 'Sun', hours: 2.6 },
-  ];
+  const totalDueCards = React.useMemo(
+    () => decks.reduce((acc, d) => acc + (d.cards_due_count || 0), 0),
+    [decks]
+  );
 
   return (
     <AppLayout
@@ -244,7 +243,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex items-end justify-between gap-3 h-32 pt-4 px-2">
-                {weeklyActivity.map((item, idx) => (
+                {WEEKLY_ACTIVITY.map((item, idx) => (
                   <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
                     <div
                       className="w-full max-w-[36px] rounded-t-lg bg-gradient-to-t from-violet-600 to-cyan-400 hover:brightness-125 transition-all shadow-sm"
